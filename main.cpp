@@ -5,9 +5,9 @@
 using namespace std;
 
 bool FileIntake(apmatrix<char> &maze);
+bool FindPath(apmatrix<char> &maze, int x, int y);
 
-int main()
-{
+int main() {
 
     apmatrix<char> maze;
 
@@ -22,6 +22,7 @@ int main()
     }
     //^^REMOVE LATER
 
+    FindPath(maze, 0, 0);
 
 
     return 0;
@@ -35,6 +36,7 @@ bool FileIntake(apmatrix<char> &maze) {
 
     ifstream fin(fileName);
 
+    //Error checking
     if (!fin.is_open()) {
         cerr << "Unable to find/open file " << fileName << endl;
         return false;
@@ -44,6 +46,13 @@ bool FileIntake(apmatrix<char> &maze) {
 
     fin >> x >> y;
 
+    // Size safety
+    if (x < 1 || y < 1) {
+        cerr << "Maze of improper dimensions" << endl;
+        fin.close();
+        return false;
+    }
+
     maze.resize(x, y);
 
     for (int i = 0; i < x; i ++) {
@@ -52,5 +61,38 @@ bool FileIntake(apmatrix<char> &maze) {
         }
     }
 
+    fin.close();
+
     return true;
 }
+
+bool FindPath(apmatrix<char> &maze, int x, int y) {
+    static apmatrix<bool> solution(maze.numcols(),maze.numrows(), false);
+
+    //Out of bounds
+    if (x < 0 || y < 0)
+        return false;
+
+    //Success
+    if (maze[x][y] == 'G')
+        return true;
+
+    if (maze[x][y] == '#')
+        return false;
+
+    solution[x][y] = true;
+
+    if (FindPath(maze, x, y - 1))
+        return true;
+    if (FindPath(maze, x + 1, y))
+        return true;
+    if (FindPath(maze, x, y + 1))
+        return true;
+    if (FindPath(maze, x - 1, y))
+        return true;
+
+    solution[x][y] = false;
+
+    return false;
+}
+bool SolveMaze(apmatrix<char> &maze)
