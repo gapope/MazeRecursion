@@ -13,7 +13,15 @@
 				<Option compiler="gcc" />
 				<Compiler>
 					<Add option="-g" />
+					<Add directory="D:/allegro/include" />
 				</Compiler>
+				<Linker>
+					<Add option="-static-libgcc" />
+					<Add option="-static-libstdc++" />
+					<Add option="-lallegro_monolith" />
+					<Add option="-lallegro" />
+					<Add directory="D:/allegro/lib" />
+				</Linker>
 			</Target>
 			<Target title="Release">
 				<Option output="bin/Release/MazeRecursion" prefix_auto="1" extension_auto="1" />
