@@ -12,13 +12,15 @@ bool drawMaze(apmatrix<char> &maze, int x, int y);
 bool findStart(apmatrix<char> &maze, int &x, int &y);
 bool findPath(apmatrix<char> &maze, int x, int y);
 
-const int SCREEN_W = 480;       // screen width
+ int SCREEN_W = 480;       // screen width
 const int SCREEN_H = 480;       // screen height
 
 int main() {
 
     apmatrix<char> maze;
     while(!loadMaze(maze));
+
+    SCREEN_W = SCREEN_H * float(maze.numcols() / maze.numrows());
 
     //Allegro setup
     ALLEGRO_DISPLAY *display = nullptr;
@@ -27,8 +29,8 @@ int main() {
 
     //FOR TESTING REMOVE LATER
 
-    for (int i =0; i < maze.numcols(); i++) {
-        for (int j = 0; j < maze.numrows(); j++) {
+    for (int i =0; i < maze.numrows(); i++) {
+        for (int j = 0; j < maze.numcols(); j++) {
             cout << maze[i][j];
         }
         cout << "\n";
@@ -62,8 +64,8 @@ int main() {
 
 
 
-    for (int i =0; i < maze.numcols(); i++) {
-        for (int j = 0; j < maze.numrows(); j++) {
+    for (int i =0; i < maze.numrows(); i++) {
+        for (int j = 0; j < maze.numcols(); j++) {
             cout << maze[i][j];
         }
         cout << "\n";
@@ -120,7 +122,7 @@ bool alInits(ALLEGRO_DISPLAY* &display, ALLEGRO_EVENT_QUEUE* &event_queue) {
         return false;
     }
 
-    display = al_create_display(SCREEN_W, SCREEN_W);
+    display = al_create_display(SCREEN_W, SCREEN_H);
 
     if (!display) {
         cerr << "Failed to initialize display" << endl;
@@ -147,36 +149,52 @@ bool alInits(ALLEGRO_DISPLAY* &display, ALLEGRO_EVENT_QUEUE* &event_queue) {
 }
 
 bool drawMaze(apmatrix<char> &maze, int x, int y) {
-     static ALLEGRO_BITMAP *character = al_load_bitmap("Data/character.bmp");
-     if (!character) return false;
-     static ALLEGRO_BITMAP *invalid = al_load_bitmap("Data/invalid.bmp");
-     if (!invalid) return false;
-     static ALLEGRO_BITMAP *valid = al_load_bitmap("Data/valid.bmp");
-     if (!valid) return false;
-     static ALLEGRO_BITMAP *searched = al_load_bitmap("Data/searched.bmp");
-     if (!searched) return false;
+    static ALLEGRO_BITMAP *character = al_load_bitmap("Data/character.bmp");
+    if (!character) return false;
+    static ALLEGRO_BITMAP *invalid = al_load_bitmap("Data/invalid.bmp");
+    if (!invalid) return false;
+    static ALLEGRO_BITMAP *valid = al_load_bitmap("Data/valid.bmp");
+    if (!valid) return false;
+    static ALLEGRO_BITMAP *searched = al_load_bitmap("Data/searched.bmp");
+    if (!searched) return false;
+    static ALLEGRO_BITMAP *failed = al_load_bitmap("Data/failed.bmp");
+    if (!failed) return false;
+    static ALLEGRO_BITMAP *goal = al_load_bitmap("Data/goal.bmp");
+    if (!goal) return false;
 
-    for (int i =0; i < maze.numcols(); i++) {
-        for (int j = 0; j < maze.numrows(); j++) {
-                if (i == x && j == y)
-                    al_draw_bitmap(character, j * 80, i * 80, 0);
-                else if (maze[i][j] == '#')
-                    al_draw_bitmap(invalid, j * 80, i * 80, 0);
-                else if (maze[i][j] == '.')
-                    al_draw_bitmap(valid, j * 80, i * 80, 0);
-                else if (maze[i][j] == '+')
-                    al_draw_bitmap(searched, j * 80, i * 80, 0);
+    static const int width = SCREEN_W / maze.numcols(), height = SCREEN_H / maze.numrows();
+
+    for (int i =0; i < maze.numrows(); i++) {
+        for (int j = 0; j < maze.numcols(); j++) {
+            if (i == x && j == y)
+                al_draw_scaled_bitmap(character, 0, 0, 80, 80,
+                                      j * width, i * height, width, height, 0);
+            else if (maze[i][j] == '#')
+                al_draw_scaled_bitmap(invalid, 0, 0, 80, 80,
+                                      j * width, i * height, width, height, 0);
+            else if (maze[i][j] == '.')
+                al_draw_scaled_bitmap(valid, 0, 0, 80, 80,
+                                      j * width, i * height, width, height, 0);
+            else if (maze[i][j] == '+')
+                al_draw_scaled_bitmap(searched, 0, 0, 80, 80,
+                                      j * width, i * height, width, height, 0);
+            else if (maze[i][j] == 'x')
+                al_draw_scaled_bitmap(failed, 0, 0, 80, 80,
+                                      j * width, i * height, width, height, 0);
+            else if (maze[i][j] == 'G')
+                al_draw_scaled_bitmap(goal, 0, 0, 80, 80,
+                                      j * width, i * height, width, height, 0);
         }
     }
 
     al_flip_display();
 
-    al_rest(1);
+    al_rest(0.7);
 }
 
 bool findStart(apmatrix<char> &maze, int &x, int &y) {
-    for (int i = 0; i < maze.numcols(); i++) {
-        for (int j = 0; j < maze.numrows(); j++) {
+    for (int i = 0; i < maze.numrows(); i++) {
+        for (int j = 0; j < maze.numcols(); j++) {
             if (maze[i][j] == 'S') {
                 x = i;
                 y = j;
@@ -190,16 +208,18 @@ bool findStart(apmatrix<char> &maze, int &x, int &y) {
 
 bool findPath(apmatrix<char> &maze, int x, int y) {
     //Out of bounds
-    if ((x < 0 || y < 0) || (x >= maze.numcols() || y >= maze.numrows()))
+    if ((x < 0 || y < 0) || (x >= maze.numrows() || y >= maze.numcols()))
         return false;
+
+    //Walls and already visited
+    if (maze[x][y] == '#' || maze[x][y] == '+' || maze[x][y] == 'x')
+        return false;
+
+    drawMaze(maze, x, y);
 
     //Success
     if (maze[x][y] == 'G')
         return true;
-    if (maze[x][y] == '#' || maze[x][y] == '+')
-        return false;
-
-    drawMaze(maze, x, y);
 
     maze[x][y] = '+';
 
