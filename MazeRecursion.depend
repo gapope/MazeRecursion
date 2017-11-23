@@ -1,10 +1,11 @@
 # depslib dependency file v1.0
-1511374282 source:d:\gregp\mazerecursion\main.cpp
+1511466695 source:d:\gregp\mazerecursion\main.cpp
 	<iostream>
 	<fstream>
 	<apmatrix.h>
 	<allegro5/allegro.h>
 	<allegro5/allegro_image.h>
+	<deque>
 
 1504818655 d:\allegro\include\allegro5\allegro.h
 	"allegro5/base.h"

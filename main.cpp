@@ -3,6 +3,7 @@
 #include <apmatrix.h>
 #include <allegro5/allegro.h>
 #include <allegro5/allegro_image.h>
+#include <deque>
 
 using namespace std;
 
@@ -11,14 +12,19 @@ bool alInits(ALLEGRO_DISPLAY* &display, ALLEGRO_EVENT_QUEUE* &event_queue);
 bool drawMaze(apmatrix<char> &maze, int x, int y);
 bool findStart(apmatrix<char> &maze, int &x, int &y);
 bool findPath(apmatrix<char> &maze, int x, int y);
+bool findPathBreadth(apmatrix<char> &maze, apmatrix<int> &direction, deque<int> &xD, deque<int> &yD);
 
- int SCREEN_W = 480;       // screen width
+int SCREEN_W = 480;       // screen width
 const int SCREEN_H = 480;       // screen height
+
+enum Direction {Down = 1, Left, Up, Right};
 
 int main() {
 
     apmatrix<char> maze;
     while(!loadMaze(maze));
+
+    apmatrix<int> direction(maze.numrows(),maze.numcols(), 0);
 
     SCREEN_W = SCREEN_H * float(maze.numcols() / maze.numrows());
 
@@ -44,7 +50,19 @@ int main() {
 
     drawMaze(maze, x, y);
 
-    if (findPath(maze, x, y)) cout << "yay" << endl;
+    deque<int> xD, yD;
+
+    xD.push_back(-1);
+    yD.push_back(-1);
+    xD.push_back(x);
+    yD.push_back(y);
+
+    cout << "hi" << endl;
+
+    while (!xD.empty() || !findPathBreadth(maze, direction, xD, yD));
+        cout << "yay" << endl;
+
+    cout << "hi1" << endl;
 
     bool quit = false;
 
@@ -60,8 +78,6 @@ int main() {
             quit = true;
         }
     }
-
-
 
 
     for (int i =0; i < maze.numrows(); i++) {
@@ -189,7 +205,8 @@ bool drawMaze(apmatrix<char> &maze, int x, int y) {
 
     al_flip_display();
 
-    al_rest(0.7);
+    al_rest(0.2);
+    return true;
 }
 
 bool findStart(apmatrix<char> &maze, int &x, int &y) {
@@ -235,6 +252,63 @@ bool findPath(apmatrix<char> &maze, int x, int y) {
     maze[x][y] = 'x';
 
 
+
+    return false;
+}
+
+bool findPathBreadth(apmatrix<char> &maze, apmatrix<int> &direction, deque<int> &xD, deque<int> &yD) {
+    int lastX = xD.front(), lastY = yD.front();
+
+    cout << "hello"
+
+    xD.pop_front();
+    yD.pop_front();
+
+    int x = xD.front(), y = yD.front();
+
+    cout << x << " " << y << endl;
+
+    //Out of bounds
+    if ((x < 0 || y < 0) || (x >= maze.numrows() || y >= maze.numcols()))
+        return false;
+
+    //Walls and already visited
+    if (maze[x][y] == '#' || maze[x][y] == '+' || maze[x][y] == 'x')
+        return false;
+
+    if (lastX == x && lastY == y + 1)
+        direction[x][y] = 1;
+    else if (lastX == x + 1 && lastY == y)
+        direction[x][y] = 2;
+    else if (lastX == x && lastY == y - 1)
+        direction[x][y] = 3;
+    else if (lastX == x - 1 && lastY == y)
+        direction[x][y] = 4;
+
+    drawMaze(maze, x, y);
+
+    //Success
+    if (maze[x][y] == 'G')
+        return true;
+
+    maze[x][y] = '+';
+
+    xD.push_back(x);
+    yD.push_back(y - 1);
+
+    xD.push_back(x - 1);
+    yD.push_back(y);
+
+    xD.push_back(x);
+    yD.push_back(y + 1);
+
+    xD.push_back(x + 1);
+    yD.push_back(y);
+
+    if (findPathBreadth(maze, direction, xD, yD))
+        return true;
+
+    maze[x][y] = 'x';
 
     return false;
 }
