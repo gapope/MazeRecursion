@@ -39,7 +39,15 @@
 		<Compiler>
 			<Add option="-Wall" />
 			<Add option="-fexceptions" />
+			<Add directory="../../../../../allegro/include" />
 		</Compiler>
+		<Linker>
+			<Add option="-static-libgcc" />
+			<Add option="-static-libstdc++" />
+			<Add option="-lallegro_monolith" />
+			<Add option="-lallegro" />
+			<Add directory="../../../../../allegro/lib" />
+		</Linker>
 		<Unit filename="main.cpp" />
 		<Extensions>
 			<code_completion />
