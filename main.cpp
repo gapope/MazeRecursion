@@ -19,7 +19,6 @@
 #include <apmatrix.h>
 #include <allegro5/allegro.h>
 #include <allegro5/allegro_image.h>
-#include <deque>
 #include <queue>
 
 using namespace std;
@@ -76,6 +75,8 @@ int main() {
 
     drawMaze(maze, x, y);
 
+
+
     if (input == 'D') {
         if (findPath(maze, x, y))
             al_set_window_title(display, "Maze solved! (press ESC to quit)");
@@ -87,11 +88,11 @@ int main() {
         queue<int> xQ, yQ;
 
         //Mounting start position
-        xD.push(x);
-        yD.push(y);
+        xQ.push(x);
+        yQ.push(y);
 
         //Looping until path is found
-        while (!xD.empty() && !findPathBreadth(maze, direction, xQ, yQ));
+        while (!xQ.empty() && !findPathBreadth(maze, direction, xQ, yQ));
 
         findGoal(maze, x, y);
 
@@ -101,7 +102,6 @@ int main() {
         } else
             al_set_window_title(display, "Unable to solve maze! (press ESC to quit)");
     }
-
 
     bool quit = false;
 
@@ -117,6 +117,8 @@ int main() {
             quit = true;
         }
     }
+
+
 
     al_destroy_event_queue(event_queue);
     al_destroy_display(display);
@@ -215,13 +217,16 @@ bool drawMaze(apmatrix<char> &maze, int x, int y) {
     static ALLEGRO_BITMAP *failed = al_load_bitmap("Data/failed.bmp");
     if (!failed) return false;
 
+    static ALLEGRO_BITMAP *start = al_load_bitmap("Data/start.bmp");
+    if (!start) return false;
+
     static ALLEGRO_BITMAP *goal = al_load_bitmap("Data/goal.bmp");
     if (!goal) return false;
 
     //Scaling ratios
     static const int width = SCREEN_W / maze.numcols(), height = SCREEN_H / maze.numrows();
 
-    for (int i =0; i < maze.numrows(); i++) {
+    for (int i = 0; i < maze.numrows(); i++) {
         for (int j = 0; j < maze.numcols(); j++) {
             if (i == x && j == y) //Location being search
                 al_draw_scaled_bitmap(character, 0, 0, 80, 80,
@@ -238,6 +243,9 @@ bool drawMaze(apmatrix<char> &maze, int x, int y) {
             else if (maze[i][j] == 'x') //Seached blocks leading to dead-end
                 al_draw_scaled_bitmap(failed, 0, 0, 80, 80,
                                       j * width, i * height, width, height, 0);
+            else if (maze[i][j] == 'S') //Start
+                al_draw_scaled_bitmap(start, 0, 0, 80, 80,
+                                      j * width, i * height, width, height, 0);
             else if (maze[i][j] == 'G') //Goal
                 al_draw_scaled_bitmap(goal, 0, 0, 80, 80,
                                       j * width, i * height, width, height, 0);
@@ -250,7 +258,7 @@ bool drawMaze(apmatrix<char> &maze, int x, int y) {
     return true;
 }
 
-//Finds coordinates of start in a materix maze
+//Finds coordinates of start in a matrix maze
 bool findStart(const apmatrix<char> &maze, int &x, int &y) {
     for (int i = 0; i < maze.numrows(); i++) {
         for (int j = 0; j < maze.numcols(); j++) {
@@ -265,7 +273,7 @@ bool findStart(const apmatrix<char> &maze, int &x, int &y) {
     return false;
 }
 
-//Finds coordinates of goal in a materix maze
+//Finds coordinates of goal in a matrix maze
 bool findGoal(const apmatrix<char> &maze, int &x, int &y) {
     for (int i = 0; i < maze.numrows(); i++) {
         for (int j = 0; j < maze.numcols(); j++) {
@@ -334,10 +342,11 @@ bool findPathBreadth(apmatrix<char> &maze, apmatrix<int> &direction, queue<int> 
         return false;
 
     //Marking direction block was arrived by from
-    if (maze[x][y] == 'S');
-    else if (y < maze.numcols() - 1 && maze[x][y + 1] == 'x') //Came from below
+    if (maze[x][y] == 'S')
+        direction[x][y] = 5;
+    else if (y < maze.numcols() - 1 && maze[x][y + 1] == 'x') //Came from right
         direction[x][y] = 1;
-    else if (x < maze.numrows() - 1 && maze[x + 1][y] == 'x') //Came from right
+    else if (x < maze.numrows() - 1 && maze[x + 1][y] == 'x') //Came from below
         direction[x][y] = 2;
     else if (y > 0 && maze[x][y - 1] == 'x') //Came from left
         direction[x][y] = 3;
@@ -383,20 +392,23 @@ bool findPathBreadth(apmatrix<char> &maze, apmatrix<int> &direction, queue<int> 
 //Finds the path between goal and start of a maze searched breadth first
 bool backTrace(apmatrix<char> &maze, const apmatrix<int> &direction, int x, int y) {
 
-    if (maze[x][y] == 'S') return true; //Found beginning
+    if (direction[x][y] == 5) {
+        maze[x][y] = 'S';
+        return true; //Found beginning
+    }
 
     //marking path
-    if (maze[x][y] != 'G' && maze[x][y] != 'S') maze[x][y] = '+';
+    if (maze[x][y] != 'G') maze[x][y] = '+';
 
     if (direction[x][y] == 0) //Invalid
         return false;
-    if (direction[x][y] == 1) //Came from below
+    else if (direction[x][y] == 1) //Came from right
         return backTrace(maze, direction, x, y + 1);
-    if (direction[x][y] == 2) //Came from right
+    else if (direction[x][y] == 2) //Came from below
         return backTrace(maze, direction, x + 1, y);
-    if (direction[x][y] == 3) //Came from below
+    else if (direction[x][y] == 3) //Came from left
         return backTrace(maze, direction, x, y - 1);
-    if (direction[x][y] == 4) //Came from left
+    else if (direction[x][y] == 4) //Came from above
         return backTrace(maze, direction, x - 1, y);
 
     return false;
