@@ -20,6 +20,7 @@
 #include <allegro5/allegro.h>
 #include <allegro5/allegro_image.h>
 #include <deque>
+#include <queue>
 
 using namespace std;
 
@@ -29,7 +30,7 @@ bool drawMaze(apmatrix<char> &maze, int x, int y);
 bool findStart(const apmatrix<char> &maze, int &x, int &y);
 bool findGoal(const apmatrix<char> &maze, int &x, int &y);
 bool findPath(apmatrix<char> &maze, int x, int y);
-bool findPathBreadth(apmatrix<char> &maze, apmatrix<int> &direction, deque<int> &xD, deque<int> &yD);
+bool findPathBreadth(apmatrix<char> &maze, apmatrix<int> &direction, queue<int> &xQ, queue<int> &yQ);
 bool backTrace(apmatrix<char> &maze, const apmatrix<int> &direction, int x, int y);
 
 int SCREEN_W = 480;
@@ -83,14 +84,14 @@ int main() {
     }
     else if (input == 'B') {
         apmatrix<int> direction(maze.numrows(), maze.numcols(), 0);
-        deque<int> xD, yD;
+        queue<int> xQ, yQ;
 
         //Mounting start position
-        xD.push_back(x);
-        yD.push_back(y);
+        xD.push(x);
+        yD.push(y);
 
         //Looping until path is found
-        while (!xD.empty() && !findPathBreadth(maze, direction, xD, yD));
+        while (!xD.empty() && !findPathBreadth(maze, direction, xQ, yQ));
 
         findGoal(maze, x, y);
 
@@ -318,11 +319,11 @@ bool findPath(apmatrix<char> &maze, int x, int y) {
 }
 
 //Locating goal of a maze using a recursive breadth first search
-bool findPathBreadth(apmatrix<char> &maze, apmatrix<int> &direction, deque<int> &xD, deque<int> &yD) {
-    int x = xD.front(), y = yD.front();
+bool findPathBreadth(apmatrix<char> &maze, apmatrix<int> &direction, queue<int> &xQ, queue<int> &yQ) {
+    int x = xQ.front(), y = yQ.front();
 
-    xD.pop_front();
-    yD.pop_front();
+    xQ.pop();
+    yQ.pop();
 
     //Out of bounds
     if ((x < 0 || y < 0) || (x >= maze.numrows() || y >= maze.numcols()))
@@ -354,23 +355,23 @@ bool findPathBreadth(apmatrix<char> &maze, apmatrix<int> &direction, deque<int> 
         return true;
 
     //Up
-    xD.push_back(x);
-    yD.push_back(y - 1);
+    xQ.push(x);
+    yQ.push(y - 1);
 
     //Left
-    xD.push_back(x - 1);
-    yD.push_back(y);
+    xQ.push(x - 1);
+    yQ.push(y);
 
     //Down
-    xD.push_back(x);
-    yD.push_back(y + 1);
+    xQ.push(x);
+    yQ.push(y + 1);
 
     //Right
-    xD.push_back(x + 1);
-    yD.push_back(y);
+    xQ.push(x + 1);
+    yQ.push(y);
 
     //Feeding new round of searches
-    if (findPathBreadth(maze, direction, xD, yD))
+    if (findPathBreadth(maze, direction, xQ, yQ))
         return true;
 
     //Marking searched blocks
